@@ -30,7 +30,7 @@
  /*
   * Is property a string?
   */
- function isString(property) {
+ const isString = (property) => {
    return typeof property === 'string' || property instanceof String
  }
 
@@ -1995,11 +1995,11 @@
     *
     * @param string User ID
     */
-   setUserId = function(userId) {
-     if (!isDefined(userId) || !userId.length) {
+   setUserId = (userId) => {
+     if (!isDefined(userId) || !userId.toString().length) {
        return
      }
-     this.configUserId = userId
+     this.configUserId = userId.toString()
    }
 
    /**
@@ -2021,7 +2021,7 @@
     * @param mixed key_or_obj
     * @param mixed opt_value
     */
-   setCustomData = function(key_or_obj, opt_value) {
+   setCustomData = (key_or_obj, opt_value) => {
      if (isObject(key_or_obj)) {
        this.configCustomData = key_or_obj
      } else {
@@ -2854,7 +2854,7 @@
     * you may need to restrict or widen the scope of the cookie domain/path to ensure the consent is applied
     * to the sites you want.
     */
-   rememberConsentGiven = function(hoursToExpire) {
+   rememberConsentGiven = (hoursToExpire) => {
      if (this.configCookiesDisabled) {
        logConsoleError('rememberConsentGiven is called but cookies are disabled, consent will not be remembered')
        return
@@ -2919,5 +2919,4 @@
    }
   }
 
- export default new Matomo()
-
+ export default new Matomo() 
