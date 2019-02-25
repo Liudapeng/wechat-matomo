@@ -1,6 +1,6 @@
 {
   "name": "wechat-matomo",
-  "version": "1.0.5",
+  "version": "3.7.0",
   "description": "piwik、matomo微信小程序客户端，from matomo js-sdk 3.7.0",
   "main": "miniprogram_dist/index.js",
   "miniprogram": "miniprogram_dist",
@@ -20,7 +20,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/Liudapeng/wechat-matomo/tree/master/wechat-matomo"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",
