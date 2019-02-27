@@ -10,6 +10,7 @@ const demoDist = path.resolve(__dirname, '../miniprogram_dev')
 const src = path.resolve(__dirname, '../src')
 const dev = path.join(demoDist, 'components')
 const dist = path.resolve(__dirname, '../miniprogram_dist')
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
 module.exports = {
   entry: ['index'],
@@ -59,9 +60,17 @@ module.exports = {
       new webpack.optimize.LimitChunkCountPlugin({
         maxChunks: 1
       }),
+      new UglifyJsPlugin({
+        uglifyOptions: {
+            mangle: false,
+            output: {
+                beautify: true,
+            },
+        }
+    })
     ],
     optimization: {
-      minimize: false,
+        minimize: false, 
     },
     // devtool: 'nosources-source-map', // 生成 js sourcemap
     performance: {

@@ -16,19 +16,21 @@ npm install --save wechat-matomo
 ### Bundler  
 
 ```js 
-import Matomo from 'wechat-matomo'
 
 app.js
 
-onLaunch() {
-    this.globalData.Matomo = Matomo.getTracker('https://hostname/piwik.php', 2)
-    this.globalData.Matomo.trackPageView('trackPageView-Launch-Title')
-    this.globalData.Matomo.trackEvent('category', 'action', 'name', 'value')
-}
+import Matomo from 'wechat-matomo'
+matomo.initTracker("https://hostname/piwik.php", siteId)
+ 
+
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/home/index',
 
 // through
-var app = getApp();
-app.Matomo.trackEvent('category', 'action', 'name', 'value')
+this.$parent.$wxapp.matomo.trackEvent('category', 'action', 'name', 'value') 
+
 ```
 
 For available operations see the [matomo api docs](https://developer.matomo.org/api-reference/tracking-javascript)

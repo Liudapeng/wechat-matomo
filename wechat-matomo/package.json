@@ -46,6 +46,7 @@
     "jest": "^23.5.0",
     "miniprogram-simulate": "^1.0.0",
     "through2": "^2.0.3",
+    "uglifyjs-webpack-plugin": "^2.1.2",
     "vinyl": "^2.2.0",
     "webpack": "^4.29.5",
     "webpack-node-externals": "^1.7.2"

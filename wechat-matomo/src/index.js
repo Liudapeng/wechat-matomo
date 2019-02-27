@@ -6,7 +6,7 @@
 
  const sysInfo = wx.getSystemInfoSync()
  const navigatorAlias = {
-   userAgent: sysInfo.SDKVersion + ' ' + sysInfo.language + ' ' + sysInfo.model + ' ' + sysInfo.platform + ' ' + sysInfo.system + ' ' + sysInfo.version,
+   userAgent: sysInfo.model + ' ' + sysInfo.language + ' ' + sysInfo.model + ' ' + sysInfo.platform + ' ' + sysInfo.system + ' ' + sysInfo.version,
    platform: sysInfo.platform
  }
 
@@ -70,23 +70,6 @@
    if (consoleType !== 'undefined' && console && console.error) {
      console.error(message)
    }
- }
-
- /*
-  * Cross-browser helper function to add event handler
-  */
- const addEventListener = (element, eventType, eventHandler, useCapture) => {
-   if (element.addEventListener) {
-     element.addEventListener(eventType, eventHandler, useCapture)
-
-     return true
-   }
-
-   if (element.attachEvent) {
-     return element.attachEvent('on' + eventType, eventHandler)
-   }
-
-   element['on' + eventType] = eventHandler
  }
 
  /*
@@ -461,7 +444,7 @@
 
      this.enableJSErrorTracking = false
 
-     this.defaultRequestMethod = 'GET'
+     this.defaultRequestMethod = 'POST'
 
      // Request method (GET or POST)
      this.configRequestMethod = this.defaultRequestMethod
@@ -509,12 +492,6 @@
 
      // Minimum visit time after initial page view (in milliseconds)
      this.configMinimumVisitTime = null
-
-     // Recurring heart beat after initial ping (in milliseconds)
-     this.configHeartBeatDelay = null
-
-     // alias to circumvent circular function dependency (JSLint requires this)
-     this.heartBeatPingIfActivityAlias = null
 
      // Disallow hash tags in URL
      this.configDiscardHashTag = null
@@ -623,14 +600,8 @@
      this.linkTrackingEnabled = false
      this.crossDomainTrackingEnabled = false
 
-     // Guard against installing the activity tracker more than once per Tracker instance
-     this.heartBeatSetUp = false
-
      // Timestamp of last tracker request sent to Piwik
      this.lastTrackerRequestTime = null
-
-     // Handle to the current heart beat timeout
-     this.heartBeatTimeout = null
 
      // Internal state of the pseudo click handler
      this.lastButton = null
@@ -664,7 +635,7 @@
 
      this.detectBrowserFeatures()
      this.updateDomainHash()
-     this.setVisitorIdCookie()
+     //  this.setVisitorIdCookie()
    }
 
    /*
@@ -686,7 +657,7 @@
      wx.setStorageSync(
        'piwik_' + cookieName,
        encodeURIComponent(value) +
-       (msToExpire ? ';' + expiryDate.toUTCString() : '')
+       (msToExpire ? ';' + expiryDate.getTime() : '')
      )
    }
 
@@ -703,8 +674,7 @@
      try {
        const res = wx.getStorageSync('piwik_' + cookieName)
        if (res) {
-         const ed = Date.parse(res.split(';')[1])
-         if (ed < new Date().getTime()) {
+         if (res.split(';')[1] < new Date().getTime()) {
            wx.removeStorage({
              key: 'piwik_' + cookieName
            })
@@ -829,7 +799,7 @@
 
      setTimeout(() => {
        wx.request({
-         url: this.configTrackerUrl + '?' + request,
+         url: this.configTrackerUrl + (this.configRequestMethod.toLowerCase() === 'GET' ? '?' + request : ''),
          data: request,
          method: this.configRequestMethod,
          header: {
@@ -837,6 +807,9 @@
          },
          success(res) {
            callback && callback()
+         },
+         fail(res) {
+           console.log('request fail', wx.request)
          }
        })
      }, 50)
@@ -849,76 +822,6 @@
      if (!expireDateTime || time > expireDateTime) {
        expireDateTime = time
      }
-   }
-
-   /*
-    * Sets up the heart beat timeout.
-    */
-   heartBeatUp = (delay) => {
-     if (this.heartBeatTimeout ||
-       !this.configHeartBeatDelay ||
-       !this.configHasConsent
-     ) {
-       return
-     }
-
-     this.heartBeatTimeout = setTimeout(() => {
-       this.heartBeatTimeout = null
-
-       if (this.heartBeatPingIfActivityAlias()) {
-         return
-       }
-
-       const now = new Date()
-       let heartBeatDelay = this.configHeartBeatDelay - (now.getTime() - this.lastTrackerRequestTime)
-       // sanity check
-       heartBeatDelay = Math.min(this.configHeartBeatDelay, heartBeatDelay)
-       this.heartBeatUp(heartBeatDelay)
-     }, delay || this.configHeartBeatDelay)
-   }
-
-   /*
-    * Removes the heart beat timeout.
-    */
-   heartBeatDown = () => {
-     if (!this.heartBeatTimeout) {
-       return
-     }
-
-     clearTimeout(this.heartBeatTimeout)
-     this.heartBeatTimeout = null
-   }
-
-   heartBeatOnFocus = () => {
-     // since it's possible for a user to come back to a tab after several hours or more, we try to send
-     // a ping if the page is active. (after the ping is sent, the heart beat timeout will be set)
-     if (this.heartBeatPingIfActivityAlias()) {
-       return
-     }
-
-     this.heartBeatUp()
-   }
-
-   heartBeatOnBlur = () => {
-     this.heartBeatDown()
-   }
-
-   /*
-    * Setup event handlers and timeout for initial heart beat.
-    */
-   setUpHeartBeat = () => {
-     if (this.heartBeatSetUp ||
-       !this.configHeartBeatDelay
-     ) {
-       return
-     }
-
-     this.heartBeatSetUp = true
-
-     addEventListener(this.windowAlias, 'focus', this.heartBeatOnFocus)
-     addEventListener(this.windowAlias, 'blur', this.heartBeatOnBlur)
-
-     this.heartBeatUp()
    }
 
    makeSureThereIsAGapAfterFirstTrackingRequestToPreventMultipleVisitorCreation(callback) {
@@ -965,19 +868,8 @@
 
        this.makeSureThereIsAGapAfterFirstTrackingRequestToPreventMultipleVisitorCreation(() => {
          this.sendXmlHttpRequest(request, callback)
-         //  if (this.configRequestMethod === 'POST' || String(request).length > 2000) {
-         //    this.sendXmlHttpRequest(request, callback)
-         //  } else {
-         //    this.getImage(request, callback)
-         //  }
-
          this.setExpireDateTime(delay)
        })
-     }
-     if (!this.heartBeatSetUp) {
-       this.setUpHeartBeat() // setup window events too, but only once
-     } else {
-       this.heartBeatUp()
      }
    }
 
@@ -1441,8 +1333,7 @@
        // and so this code path is triggered many times for one visit,
        // we only increase visitCount once per Visit window (default 30min)
        var visitDuration = this.configSessionCookieTimeout / 1000
-       if (!cookieVisitorIdValues.lastVisitTs ||
-         (nowTs - cookieVisitorIdValues.lastVisitTs) > visitDuration) {
+       if (!cookieVisitorIdValues.lastVisitTs || (nowTs - cookieVisitorIdValues.lastVisitTs) > visitDuration) {
          cookieVisitorIdValues.visitCount++
          cookieVisitorIdValues.lastVisitTs = cookieVisitorIdValues.currentVisitTs
        }
@@ -1510,6 +1401,7 @@
        ((this.configUserId && this.configUserId.length) ? '&uid=' + encodeURIComponent(this.configUserId) : '') +
        '&_id=' + cookieVisitorIdValues.uuid + '&_idts=' + cookieVisitorIdValues.createTs + '&_idvc=' + cookieVisitorIdValues.visitCount +
        '&_idn=' + cookieVisitorIdValues.newVisitor + // currently unused
+       '&new_visit=' + cookieVisitorIdValues.newVisitor +
        (campaignNameDetected.length ? '&_rcn=' + encodeURIComponent(campaignNameDetected) : '') +
        (campaignKeywordDetected.length ? '&_rck=' + encodeURIComponent(campaignKeywordDetected) : '') +
        '&_refts=' + referralTs +
@@ -1598,10 +1490,12 @@
      if (this.configPerformanceTrackingEnabled) {
        if (this.configPerformanceGenerationTime) {
          request += '&gt_ms=' + this.configPerformanceGenerationTime
-       } else if (performance && performance.timing &&
-         performance.timing.requestStart && performance.timing.responseEnd) {
-         request += '&gt_ms=' + (performance.timing.responseEnd - performance.timing.requestStart)
        }
+
+       //    else if (performance && performance.timing &&
+       //      performance.timing.requestStart && performance.timing.responseEnd) {
+       //      request += '&gt_ms=' + (performance.timing.responseEnd - performance.timing.requestStart)
+       //    }
      }
 
      if (this.configIdPageView) {
@@ -1613,12 +1507,6 @@
      this.setVisitorIdCookie(cookieVisitorIdValues)
      this.setCookie(this.getCookieName('ses'), '*', this.configSessionCookieTimeout, this.configCookiePath, this.configCookieDomain, this.configCookieIsSecure)
 
-     // tracker plugin hook
-     //   request += executePluginMethod(pluginMethod, {
-     //     tracker: trackerInstance,
-     //     request: request
-     //   })
-
      if (this.configAppendToTrackingUrl.length) {
        request += '&' + this.configAppendToTrackingUrl
      }
@@ -1628,22 +1516,6 @@
      }
 
      return request
-   }
-
-   /*
-    * If there was user activity since the last check, and it's been configHeartBeatDelay seconds
-    * since the last tracker, send a ping request (the heartbeat timeout will be reset by sendRequest).
-    */
-   heartBeatPingIfActivityAlias = this.heartBeatPingIfActivity = () => {
-     var now = new Date()
-     if (this.lastTrackerRequestTime + this.configHeartBeatDelay <= now.getTime()) {
-       var requestPing = this.getRequest('ping=1', null, 'ping')
-       this.sendRequest(requestPing, this.configTrackerPause)
-
-       return true
-     }
-
-     return false
    }
 
    logEcommerce(orderId, grandTotal, subTotal, tax, shipping, discount) {
@@ -1858,7 +1730,7 @@
      this.browserFeatures.java = '0'
      this.browserFeatures.gears = '0'
      // other browser features
-     this.browserFeatures.cookie = '1'
+     this.browserFeatures.cookie = '0'
      var width = parseInt(sysInfo.screenWidth, 10)
      var height = parseInt(sysInfo.screenHeight, 10)
      this.browserFeatures.res = parseInt(width, 10) + 'x' + parseInt(height, 10)
@@ -2084,7 +1956,7 @@
        if (!isDefined(value)) {
          value = ''
        }
-       if (!this.isString(value)) {
+       if (!isString(value)) {
          value = String(value)
        }
        this.customDimensions[customDimensionId] = value
@@ -2905,6 +2777,12 @@
    forgetUserOptOut = this.rememberConsentGiven
  }
 
+ /**
+  * Matomo 小程序客户端
+  * use:
+  * import matomo from './utils/matomo'
+  * matomo.initTracker(reportUrl, 1) // 注意不要在App Class内部初始化，会跟踪不到App事件
+  */
  class Matomo {
    constructor() {
      if (Matomo.prototype.Instance === undefined) {
@@ -2913,10 +2791,109 @@
      return Matomo.prototype.Instance
    }
 
-   getTracker(matomoUrl, siteId) {
-     this.tracker = this.tracker || new Tracker(matomoUrl, siteId)
+   _before = (t, a, e) => {
+     try {
+       if (t[a]) {
+         var s = t[a]
+         t[a] = function(t) {
+           e.call(this, t, a)
+           s.call(this, t)
+         }
+       } else {
+         t[a] = function(t) {
+           e.call(this, t, a)
+         }
+       }
+     } catch (error) {
+       console.error(error)
+     }
+   }
+
+   /**
+    * 初始化一个跟踪器
+    * @param {String} matomoUrl
+    * @param {String} siteId
+    * @param {Boolean} autoTrackPage 自动跟踪App、Page生命周期事件
+    */
+   initTracker(matomoUrl, siteId, autoTrackPage = true) {
+     if (!this.tracker) {
+       this.tracker = new Tracker(matomoUrl, siteId)
+
+       // 注入到App实例
+       this.AppProxy = App
+       App = (app) => {
+         app.matomo = this.tracker
+         if (autoTrackPage) {
+           this._before(app, 'onLaunch', this._appOnLaunch)
+           this._before(app, 'onUnlaunch', this._appOnUnlaunch)
+           this._before(app, 'onShow', this._appOnShow)
+           this._before(app, 'onHide', this._appOnHide)
+           this._before(app, 'onError', this._appOnError)
+         }
+         this.AppProxy(app)
+       }
+
+       // 注入到Page实例
+       this.PageProxy = Page
+       Page = (page) => {
+         page.matomo = this.tracker
+         if (autoTrackPage) {
+           this._before(page, 'onLoad', this._pageOnLoad)
+           this._before(page, 'onUnload', this._pageOnUnload)
+           this._before(page, 'onShow', this._pageOnShow)
+           this._before(page, 'onHide', this._pageOnHide)
+         }
+         this.PageProxy(page)
+       }
+     }
      return this.tracker
    }
-  }
 
- export default new Matomo() 
+   _appOnLaunch = function(options) {
+     console.log('_appOnLaunch', options)
+     this.matomo.setCustomDimension(1, options.scene)
+     this.matomo.setCustomUrl('app/launch')
+     this.matomo.trackPageView('app/launch')
+   }
+
+   _appOnUnlaunch = function() {
+     console.log('_appOnUnlaunch')
+   }
+
+   _appOnShow = function(options) {
+     console.log('_appOnShow', options)
+     this.matomo.setCustomDimension(1, options.scene)
+     this.matomo.setCustomData(options)
+     this.matomo.setCustomUrl('app/show')
+     this.matomo.trackPageView('app/show')
+   }
+
+   _appOnHide = function() {
+     console.log('_appOnHide')
+   }
+
+   _appOnError = function() {
+     console.log('_appOnError')
+   }
+
+   _pageOnLoad = function(options) {
+     console.log('_pageOnLoad', options)
+     this.matomo.setCustomData(options)
+     this.matomo.setCustomUrl(this.route)
+     this.matomo.trackPageView(this.route)
+   }
+
+   _pageOnUnload = function() {
+     console.log('_pageOnUnload')
+   }
+
+   _pageOnShow = function() {
+     console.log('_pageOnShow')
+   }
+
+   _pageOnHide = function() {
+     console.log('_pageOnHide')
+   }
+ }
+
+ export default new Matomo()
