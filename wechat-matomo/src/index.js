@@ -10,6 +10,8 @@
    platform: sysInfo.platform
  }
 
+ const pageScheme = "wechat-mp://"
+
  /*
   * Is property defined?
   */
@@ -2815,8 +2817,7 @@
     * @param {String} siteId
     * @param {Boolean} autoTrackPage 自动跟踪App、Page生命周期事件
     */
-   initTracker(matomoUrl, siteId, autoTrackPage = true) {
-     this.pageScheme = "wechat-mp://"
+   initTracker(matomoUrl, siteId, autoTrackPage = true) { 
      if (!this.tracker) {
        this.tracker = new Tracker(matomoUrl, siteId)
 
@@ -2853,8 +2854,8 @@
    _appOnLaunch = function (options) {
      console.log('_appOnLaunch', options)
      this.matomo.setCustomDimension(1, options.scene)
-     this.matomo.setCustomUrl(this.pageScheme + 'app/launch')
-     this.matomo.trackPageView(this.pageScheme + 'app/launch')
+     this.matomo.setCustomUrl(pageScheme + 'app/launch')
+     this.matomo.trackPageView(pageScheme + 'app/launch')
    }
 
    _appOnUnlaunch = function () {
@@ -2865,8 +2866,8 @@
      console.log('_appOnShow', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(this.pageScheme + 'app/show')
-     this.matomo.trackPageView(this.pageScheme + 'app/show')
+     this.matomo.setCustomUrl(pageScheme + 'app/show')
+     this.matomo.trackPageView(pageScheme + 'app/show')
    }
 
    _appOnHide = function () {
@@ -2880,8 +2881,8 @@
    _pageOnLoad = function (options) {
      console.log('_pageOnLoad', options)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(this.pageScheme + this.route)
-     this.matomo.trackPageView(this.pageScheme + this.route)
+     this.matomo.setCustomUrl(pageScheme + this.route)
+     this.matomo.trackPageView(pageScheme + this.route)
    }
 
    _pageOnUnload = function () {
