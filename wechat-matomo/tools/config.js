@@ -64,11 +64,16 @@ module.exports = {
         uglifyOptions: {
             mangle: false,
             output: {
-                beautify: true,
+                beautify: true, 
             },
-        }
+            compress: {
+              warnings: false,
+              drop_debugger: true,
+              drop_console: true
+            }
+        } 
     })
-    ],
+    ], 
     optimization: {
         minimize: false, 
     },

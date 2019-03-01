@@ -17,19 +17,21 @@ npm install --save wechat-matomo
 
 ```js 
 
+init
+
 app.js
 
 import Matomo from 'wechat-matomo'
 matomo.initTracker("https://hostname/piwik.php", siteId)
- 
-
+   
 export default class extends wepy.app {
   config = {
     pages: [
       'pages/home/index',
 
 // through
-this.$parent.$wxapp.matomo.trackEvent('category', 'action', 'name', 'value') 
+this.$parent.$wxapp.matomo.setUserId(userId or email)
+this.$parent.$wxapp.matomo.trackEvent('category', 'action', 'name', 'value')
 
 ```
 
