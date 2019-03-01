@@ -6,7 +6,7 @@
 
  const sysInfo = wx.getSystemInfoSync()
  const navigatorAlias = {
-   userAgent: sysInfo.model + ' ' + sysInfo.language + ' ' + sysInfo.model + ' ' + sysInfo.platform + ' ' + sysInfo.system + ' ' + sysInfo.version,
+   userAgent: sysInfo.model + ' ' + sysInfo.language + ' ' + sysInfo.screenWidth + "x" + sysInfo.screenHeight + ' ' + sysInfo.platform + ' ' + sysInfo.system + ' ' + sysInfo.version,
    platform: sysInfo.platform
  }
 
@@ -1825,7 +1825,7 @@
     *
     * @param string trackerUrl
     */
-   setTrackerUrl = function(trackerUrl) {
+   setTrackerUrl = function (trackerUrl) {
      this.configTrackerUrl = trackerUrl
    }
 
@@ -2795,12 +2795,12 @@
      try {
        if (t[a]) {
          var s = t[a]
-         t[a] = function(t) {
+         t[a] = function (t) {
            e.call(this, t, a)
            s.call(this, t)
          }
        } else {
-         t[a] = function(t) {
+         t[a] = function (t) {
            e.call(this, t, a)
          }
        }
@@ -2816,6 +2816,7 @@
     * @param {Boolean} autoTrackPage 自动跟踪App、Page生命周期事件
     */
    initTracker(matomoUrl, siteId, autoTrackPage = true) {
+     this.pageScheme = "wechat-mp://"
      if (!this.tracker) {
        this.tracker = new Tracker(matomoUrl, siteId)
 
@@ -2849,49 +2850,49 @@
      return this.tracker
    }
 
-   _appOnLaunch = function(options) {
+   _appOnLaunch = function (options) {
      console.log('_appOnLaunch', options)
      this.matomo.setCustomDimension(1, options.scene)
-     this.matomo.setCustomUrl('app/launch')
-     this.matomo.trackPageView('app/launch')
+     this.matomo.setCustomUrl(this.pageScheme + 'app/launch')
+     this.matomo.trackPageView(this.pageScheme + 'app/launch')
    }
 
-   _appOnUnlaunch = function() {
+   _appOnUnlaunch = function () {
      console.log('_appOnUnlaunch')
    }
 
-   _appOnShow = function(options) {
+   _appOnShow = function (options) {
      console.log('_appOnShow', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl('app/show')
-     this.matomo.trackPageView('app/show')
+     this.matomo.setCustomUrl(this.pageScheme + 'app/show')
+     this.matomo.trackPageView(this.pageScheme + 'app/show')
    }
 
-   _appOnHide = function() {
+   _appOnHide = function () {
      console.log('_appOnHide')
    }
 
-   _appOnError = function() {
+   _appOnError = function () {
      console.log('_appOnError')
    }
 
-   _pageOnLoad = function(options) {
+   _pageOnLoad = function (options) {
      console.log('_pageOnLoad', options)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(this.route)
-     this.matomo.trackPageView(this.route)
+     this.matomo.setCustomUrl(this.pageScheme + this.route)
+     this.matomo.trackPageView(this.pageScheme + this.route)
    }
 
-   _pageOnUnload = function() {
+   _pageOnUnload = function () {
      console.log('_pageOnUnload')
    }
 
-   _pageOnShow = function() {
+   _pageOnShow = function () {
      console.log('_pageOnShow')
    }
 
-   _pageOnHide = function() {
+   _pageOnHide = function () {
      console.log('_pageOnHide')
    }
  }
