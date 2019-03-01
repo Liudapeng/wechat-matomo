@@ -6,11 +6,9 @@
 
  const sysInfo = wx.getSystemInfoSync()
  const navigatorAlias = {
-   userAgent: sysInfo.model + ' ' + sysInfo.language + ' ' + sysInfo.screenWidth + "x" + sysInfo.screenHeight + ' ' + sysInfo.platform + ' ' + sysInfo.system + ' ' + sysInfo.version,
+   userAgent: sysInfo.model + ' ' + sysInfo.language + ' ' + sysInfo.screenWidth + 'x' + sysInfo.screenHeight + ' ' + sysInfo.platform + ' ' + sysInfo.system + ' ' + sysInfo.version,
    platform: sysInfo.platform
  }
-
- const pageScheme = "wechat-mp://"
 
  /*
   * Is property defined?
@@ -169,21 +167,21 @@
  const utf8_encode = (argString) => {
    return unescape(encodeURIComponent(argString))
  }
- 
+
  const serialiseObject = (obj) => {
-  var pairs = [];
-  for (var prop in obj) {
-      if (!obj.hasOwnProperty(prop)) {
-          continue;
-      }
-      if (Object.prototype.toString.call(obj[prop]) == '[object Object]') {
-          pairs.push(serialiseObject(obj[prop]));
-          continue;
-      }
-      pairs.push(prop + '=' + obj[prop]);
-  }
-  return pairs.join('&');
-}
+   var pairs = []
+   for (var prop in obj) {
+     if (!obj.hasOwnProperty(prop)) {
+       continue
+     }
+     if (Object.prototype.toString.call(obj[prop]) == '[object Object]') {
+       pairs.push(serialiseObject(obj[prop]))
+       continue
+     }
+     pairs.push(prop + '=' + obj[prop])
+   }
+   return pairs.join('&')
+ }
 
  /** **********************************************************
   * sha1
@@ -477,9 +475,6 @@
      // This string is appended to the Tracker URL Request (eg. to send data that is not handled by the existing setters/getters)
      this.configAppendToTrackingUrl = ''
 
-     // User ID
-     this.configUserId = ''
-
      // Visitor UUID
      this.visitorUUID = ''
 
@@ -653,6 +648,9 @@
      this.detectBrowserFeatures()
      this.updateDomainHash()
      //  this.setVisitorIdCookie()
+
+     // User ID
+     this.configUserId = this.getCookie(this.getCookieName('user_id'))
    }
 
    /*
@@ -1842,7 +1840,7 @@
     *
     * @param string trackerUrl
     */
-   setTrackerUrl = function (trackerUrl) {
+   setTrackerUrl = function(trackerUrl) {
      this.configTrackerUrl = trackerUrl
    }
 
@@ -1877,6 +1875,7 @@
     */
    resetUserId = () => {
      this.configUserId = ''
+     this.deleteCookie(this.getCookieName('user_id'), '', '')
    }
 
    /**
@@ -1885,10 +1884,11 @@
     * @param string User ID
     */
    setUserId = (userId) => {
-     if (!isDefined(userId) || !userId.toString().length) {
+     if (!isDefined(userId) || userId == null || !userId.toString().length) {
        return
      }
      this.configUserId = userId.toString()
+     this.setCookie(this.getCookieName('user_id'), this.configUserId, this.getRemainingVisitorCookieTimeout())
    }
 
    /**
@@ -2812,12 +2812,12 @@
      try {
        if (t[a]) {
          var s = t[a]
-         t[a] = function (t) {
+         t[a] = function(t) {
            e.call(this, t, a)
            s.call(this, t)
          }
        } else {
-         t[a] = function (t) {
+         t[a] = function(t) {
            e.call(this, t, a)
          }
        }
@@ -2832,9 +2832,15 @@
     * @param {String} siteId
     * @param {Boolean} autoTrackPage 自动跟踪App、Page生命周期事件
     */
-   initTracker(matomoUrl, siteId, autoTrackPage = true) {
+   initTracker = (matomoUrl, siteId, {
+     autoTrackPage = true,
+     pageScheme = 'mp://',
+     pageTitles = {}
+   } = {}) => {
      if (!this.tracker) {
        this.tracker = new Tracker(matomoUrl, siteId)
+       this.tracker.pageScheme = pageScheme
+       this.tracker.pageTitles = pageTitles
 
        // 注入到App实例
        this.AppProxy = App
@@ -2859,6 +2865,9 @@
            this._before(page, 'onUnload', this._pageOnUnload)
            this._before(page, 'onShow', this._pageOnShow)
            this._before(page, 'onHide', this._pageOnHide)
+           if (typeof page['onShareAppMessage'] !== 'undefined') {
+             this._before(page, 'onShareAppMessage', this._pageOnShareAppMessage)
+           }
          }
          this.PageProxy(page)
        }
@@ -2866,50 +2875,55 @@
      return this.tracker
    }
 
-   _appOnLaunch = function (options) {
+   _appOnLaunch = function(options) {
      console.log('_appOnLaunch', options)
      this.matomo.setCustomDimension(1, options.scene)
-     this.matomo.setCustomUrl(pageScheme + 'app/launch?' + serialiseObject(options))
-     this.matomo.trackPageView(pageScheme + 'app/launch')
+     this.matomo.setCustomUrl(this.matomo.pageScheme + 'app/launch?' + serialiseObject(options))
+     this.matomo.trackPageView('app/launch')
    }
 
-   _appOnUnlaunch = function () {
+   _appOnUnlaunch = function() {
      console.log('_appOnUnlaunch')
    }
 
-   _appOnShow = function (options) {
+   _appOnShow = function(options) {
      console.log('_appOnShow', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(pageScheme + 'app/show?' + serialiseObject(options))
-     this.matomo.trackPageView(pageScheme + 'app/show')
+     this.matomo.setCustomUrl(this.matomo.pageScheme + 'app/show?' + serialiseObject(options))
+     this.matomo.trackPageView('app/show')
    }
 
-   _appOnHide = function () {
+   _appOnHide = function() {
      console.log('_appOnHide')
    }
 
-   _appOnError = function () {
+   _appOnError = function() {
      console.log('_appOnError')
    }
 
-   _pageOnLoad = function (options) {
+   _pageOnLoad = function(options) {
      console.log('_pageOnLoad', options)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(pageScheme + this.route + "?" + serialiseObject(options))
-     this.matomo.trackPageView(pageScheme + this.route)
+     this.matomo.setCustomUrl(this.matomo.pageScheme + this.route + '?' + serialiseObject(options))
+     this.matomo.trackPageView(this.matomo.pageTitles[this.route] || this.route)
    }
 
-   _pageOnUnload = function () {
+   _pageOnUnload = function() {
      console.log('_pageOnUnload')
    }
 
-   _pageOnShow = function () {
+   _pageOnShow = function() {
      console.log('_pageOnShow')
    }
 
-   _pageOnHide = function () {
+   _pageOnHide = function() {
      console.log('_pageOnHide')
+   }
+
+   _pageOnShareAppMessage = function(options) {
+     console.log('_pageOnShareAppMessage', options)
+     this.matomo.trackEvent('Share', 'OnShareAppMessage', serialiseObject(options))
    }
  }
 
