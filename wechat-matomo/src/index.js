@@ -169,6 +169,21 @@
  const utf8_encode = (argString) => {
    return unescape(encodeURIComponent(argString))
  }
+ 
+ const serialiseObject = (obj) => {
+  var pairs = [];
+  for (var prop in obj) {
+      if (!obj.hasOwnProperty(prop)) {
+          continue;
+      }
+      if (Object.prototype.toString.call(obj[prop]) == '[object Object]') {
+          pairs.push(serialiseObject(obj[prop]));
+          continue;
+      }
+      pairs.push(prop + '=' + obj[prop]);
+  }
+  return pairs.join('&');
+}
 
  /** **********************************************************
   * sha1
@@ -2817,7 +2832,7 @@
     * @param {String} siteId
     * @param {Boolean} autoTrackPage 自动跟踪App、Page生命周期事件
     */
-   initTracker(matomoUrl, siteId, autoTrackPage = true) { 
+   initTracker(matomoUrl, siteId, autoTrackPage = true) {
      if (!this.tracker) {
        this.tracker = new Tracker(matomoUrl, siteId)
 
@@ -2854,7 +2869,7 @@
    _appOnLaunch = function (options) {
      console.log('_appOnLaunch', options)
      this.matomo.setCustomDimension(1, options.scene)
-     this.matomo.setCustomUrl(pageScheme + 'app/launch')
+     this.matomo.setCustomUrl(pageScheme + 'app/launch?' + serialiseObject(options))
      this.matomo.trackPageView(pageScheme + 'app/launch')
    }
 
@@ -2866,7 +2881,7 @@
      console.log('_appOnShow', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(pageScheme + 'app/show')
+     this.matomo.setCustomUrl(pageScheme + 'app/show?' + serialiseObject(options))
      this.matomo.trackPageView(pageScheme + 'app/show')
    }
 
@@ -2881,7 +2896,7 @@
    _pageOnLoad = function (options) {
      console.log('_pageOnLoad', options)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(pageScheme + this.route)
+     this.matomo.setCustomUrl(pageScheme + this.route + "?" + serialiseObject(options))
      this.matomo.trackPageView(pageScheme + this.route)
    }
 
