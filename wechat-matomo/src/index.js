@@ -399,6 +399,14 @@
    return -1
  }
 
+ /*获取当前页url*/
+ const getCurrentPageUrl = () => {
+   var pages = getCurrentPages() //获取加载的页面
+   var currentPage = pages[pages.length - 1] //获取当前页面的对象
+   var url = currentPage.route //当前页面url
+   return url
+ }
+ 
  /** **********************************************************
   * Element Visiblility
   * removed
@@ -1840,7 +1848,7 @@
     *
     * @param string trackerUrl
     */
-   setTrackerUrl = function(trackerUrl) {
+   setTrackerUrl = function (trackerUrl) {
      this.configTrackerUrl = trackerUrl
    }
 
@@ -2812,12 +2820,12 @@
      try {
        if (t[a]) {
          var s = t[a]
-         t[a] = function(t) {
+         t[a] = function (t) {
            e.call(this, t, a)
            s.call(this, t)
          }
        } else {
-         t[a] = function(t) {
+         t[a] = function (t) {
            e.call(this, t, a)
          }
        }
@@ -2875,18 +2883,18 @@
      return this.tracker
    }
 
-   _appOnLaunch = function(options) {
+   _appOnLaunch = function (options) {
      console.log('_appOnLaunch', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomUrl(this.matomo.pageScheme + 'app/launch?' + serialiseObject(options))
      this.matomo.trackPageView('app/launch')
    }
 
-   _appOnUnlaunch = function() {
+   _appOnUnlaunch = function () {
      console.log('_appOnUnlaunch')
    }
 
-   _appOnShow = function(options) {
+   _appOnShow = function (options) {
      console.log('_appOnShow', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomData(options)
@@ -2894,34 +2902,34 @@
      this.matomo.trackPageView('app/show')
    }
 
-   _appOnHide = function() {
+   _appOnHide = function () {
      console.log('_appOnHide')
    }
 
-   _appOnError = function() {
+   _appOnError = function () {
      console.log('_appOnError')
    }
 
-   _pageOnLoad = function(options) {
+   _pageOnLoad = function (options) {
      console.log('_pageOnLoad', options)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(this.matomo.pageScheme + this.route + '?' + serialiseObject(options))
-     this.matomo.trackPageView(this.matomo.pageTitles[this.route] || this.route)
+     this.matomo.setCustomUrl(this.matomo.pageScheme + getCurrentPageUrl() + '?' + serialiseObject(options))
+     this.matomo.trackPageView(this.matomo.pageTitles[getCurrentPageUrl()] || getCurrentPageUrl())
    }
 
-   _pageOnUnload = function() {
+   _pageOnUnload = function () {
      console.log('_pageOnUnload')
    }
 
-   _pageOnShow = function() {
+   _pageOnShow = function () {
      console.log('_pageOnShow')
    }
 
-   _pageOnHide = function() {
+   _pageOnHide = function () {
      console.log('_pageOnHide')
    }
 
-   _pageOnShareAppMessage = function(options) {
+   _pageOnShareAppMessage = function (options) {
      console.log('_pageOnShareAppMessage', options)
      this.matomo.trackEvent('Share', 'OnShareAppMessage', serialiseObject(options))
    }
