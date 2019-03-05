@@ -168,14 +168,21 @@
    return unescape(encodeURIComponent(argString))
  }
 
+ /**
+  * object to queryString 
+  */
  const serialiseObject = (obj) => {
-   var pairs = []
-   for (var prop in obj) {
+   let pairs = []
+   let ignores = ['function', 'undefined']
+   for (let prop in obj) {
      if (!obj.hasOwnProperty(prop)) {
        continue
      }
      if (Object.prototype.toString.call(obj[prop]) == '[object Object]') {
        pairs.push(serialiseObject(obj[prop]))
+       continue
+     }
+     if (ignores.indexOf(obj[prop]) === -1) {
        continue
      }
      pairs.push(prop + '=' + obj[prop])
@@ -353,53 +360,9 @@
    return domain
  }
 
- // Polyfill for IndexOf for IE6-IE8
- const indexOfArray = (theArray, searchElement) => {
-   if (theArray && theArray.indexOf) {
-     return theArray.indexOf(searchElement)
-   }
-
-   // 1. Let O be the result of calling ToObject passing
-   //    the this value as the argument.
-   if (!isDefined(theArray) || theArray === null) {
-     return -1
-   }
-
-   if (!theArray.length) {
-     return -1
-   }
-
-   var len = theArray.length
-
-   if (len === 0) {
-     return -1
-   }
-
-   var k = 0
-
-   // 9. Repeat, while k < len
-   while (k < len) {
-     // a. Let Pk be ToString(k).
-     //   This is implicit for LHS operands of the in operator
-     // b. Let kPresent be the result of calling the
-     //    HasProperty internal method of O with argument Pk.
-     //   This step can be combined with c
-     // c. If kPresent is true, then
-     //    i.  Let elementK be the result of calling the Get
-     //        internal method of O with the argument ToString(k).
-     //   ii.  Let same be the result of applying the
-     //        Strict Equality Comparison Algorithm to
-     //        searchElement and elementK.
-     //  iii.  If same is true, return k.
-     if (theArray[k] === searchElement) {
-       return k
-     }
-     k++
-   }
-   return -1
- }
-
- /* 获取当前页url*/
+ /**
+  * page.route path
+  */
  const getCurrentPageUrl = () => {
    var pages = getCurrentPages() // 获取加载的页面
    var currentPage = pages[pages.length - 1] // 获取当前页面的对象
@@ -1466,7 +1429,7 @@
      // custom dimensions
      for (i in this.customDimensions) {
        if (Object.prototype.hasOwnProperty.call(this.customDimensions, i)) {
-         var isNotSetYet = (indexOfArray(customDimensionIdsAlreadyHandled, i) === -1)
+         var isNotSetYet = (customDimensionIdsAlreadyHandled.indexOf(i) === -1)
          if (isNotSetYet) {
            request += '&dimension' + i + '=' + this.customDimensions[i]
          }
@@ -1852,7 +1815,7 @@
     *
     * @param string trackerUrl
     */
-   setTrackerUrl = function(trackerUrl) {
+   setTrackerUrl = function (trackerUrl) {
      this.configTrackerUrl = trackerUrl
    }
 
@@ -2181,7 +2144,7 @@
        extensions = extensions.split('|')
      }
      for (i = 0; i < this.configDownloadExtensions.length; i++) {
-       if (indexOfArray(extensions, this.configDownloadExtensions[i]) === -1) {
+       if (extensions.indexOf(this.configDownloadExtensions[i]) === -1) {
          newExtensions.push(this.configDownloadExtensions[i])
        }
      }
@@ -2824,12 +2787,12 @@
      try {
        if (t[a]) {
          var s = t[a]
-         t[a] = function(t) {
+         t[a] = function (t) {
            e.call(this, t, a)
            s.call(this, t)
          }
        } else {
-         t[a] = function(t) {
+         t[a] = function (t) {
            e.call(this, t, a)
          }
        }
@@ -2887,18 +2850,18 @@
      return this.tracker
    }
 
-   _appOnLaunch = function(options) {
+   _appOnLaunch = function (options) {
      console.log('_appOnLaunch', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomUrl(this.matomo.pageScheme + 'app/launch?' + serialiseObject(options))
      this.matomo.trackPageView('app/launch')
    }
 
-   _appOnUnlaunch = function() {
+   _appOnUnlaunch = function () {
      console.log('_appOnUnlaunch')
    }
 
-   _appOnShow = function(options) {
+   _appOnShow = function (options) {
      console.log('_appOnShow', options)
      this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomData(options)
@@ -2906,39 +2869,39 @@
      this.matomo.trackPageView('app/show')
    }
 
-   _appOnHide = function() {
+   _appOnHide = function () {
      console.log('_appOnHide')
    }
 
-   _appOnError = function() {
+   _appOnError = function () {
      console.log('_appOnError')
    }
 
-   _pageOnLoad = function(options) {
+   _pageOnLoad = function (options) {
      console.log('_pageOnLoad', options)
      this.matomo.setCustomData(options)
      const url = getCurrentPageUrl()
-     if (url) {
+     if (url && url !== "module/index") {
        this.matomo.setCustomUrl(this.matomo.pageScheme + getCurrentPageUrl() + '?' + serialiseObject(options))
        this.matomo.trackPageView(this.matomo.pageTitles[getCurrentPageUrl()] || getCurrentPageUrl())
      }
    }
 
-   _pageOnUnload = function() {
+   _pageOnUnload = function () {
      console.log('_pageOnUnload')
    }
 
-   _pageOnShow = function() {
+   _pageOnShow = function () {
      console.log('_pageOnShow')
    }
 
-   _pageOnHide = function() {
+   _pageOnHide = function () {
      console.log('_pageOnHide')
    }
 
-   _pageOnShareAppMessage = function(options) {
+   _pageOnShareAppMessage = function (options) {
      console.log('_pageOnShareAppMessage', options)
-     this.matomo.trackEvent('Share', 'OnShareAppMessage', serialiseObject(options))
+     this.matomo.trackEvent('share', 'OnShareAppMessage', serialiseObject(options))
    }
  }
 
