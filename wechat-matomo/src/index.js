@@ -2787,6 +2787,21 @@
      return Matomo.prototype.Instance
    }
 
+   _before2 = (t, a, e) => {
+     if (t[a]) {
+       var s = t[a]
+       t[a] = function(t) {
+         var n = s.call(this, t)
+         e.call(this, [t, n], a)
+         return n
+       }
+     } else {
+       t[a] = function(t) {
+         e.call(this, t, a)
+       }
+     }
+   }
+
    _before = (t, a, e) => {
      try {
        if (t[a]) {
@@ -2845,7 +2860,7 @@
            this._before(page, 'onShow', this._pageOnShow)
            this._before(page, 'onHide', this._pageOnHide)
            if (typeof page['onShareAppMessage'] !== 'undefined') {
-             this._before(page, 'onShareAppMessage', this._pageOnShareAppMessage)
+             this._before2(page, 'onShareAppMessage', this._pageOnShareAppMessage)
            }
          }
          this.PageProxy(page)
