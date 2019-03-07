@@ -172,22 +172,68 @@
   * object to queryString
   */
  const serialiseObject = (obj) => {
-   const pairs = []
-   const ignores = ['function', 'undefined']
-   for (const prop in obj) {
-     if (!obj.hasOwnProperty(prop)) {
-       continue
+   try {
+     const pairs = []
+     const ignores = ['function', 'undefined']
+     for (const prop in obj) {
+       if (!obj.hasOwnProperty(prop)) {
+         continue
+       }
+       if (Object.prototype.toString.call(obj[prop]) === '[object Object]') {
+         pairs.push(serialiseObject(obj[prop]))
+         continue
+       }
+       if (ignores.indexOf(typeof obj[prop]) !== -1) {
+         continue
+       }
+       pairs.push(prop + '=' + obj[prop])
      }
-     if (Object.prototype.toString.call(obj[prop]) === '[object Object]') {
-       pairs.push(serialiseObject(obj[prop]))
-       continue
-     }
-     if (ignores.indexOf(typeof obj[prop]) !== -1) {
-       continue
-     }
-     pairs.push(prop + '=' + obj[prop])
+     return pairs.filter(item => item !== '').sort().join('&')
+   } catch (error) {
+     console.error(error)
+     return ''
    }
-   return pairs.join('&')
+ }
+
+/*
+  * Fix-up domain
+  */
+ const domainFixup = (domain) => {
+   var dl = domain.length
+
+  // remove trailing '.'
+   if (domain.charAt(--dl) === '.') {
+     domain = domain.slice(0, dl)
+   }
+
+  // remove leading '*'
+   if (domain.slice(0, 2) === '*.') {
+     domain = domain.slice(1)
+   }
+
+   if (domain.indexOf('/') !== -1) {
+     domain = domain.substr(0, domain.indexOf('/'))
+   }
+
+   return domain
+ }
+
+/**
+ * page.route path
+ */
+ const getCurrentPageUrl = () => {
+   if (typeof getCurrentPages !== 'function') {
+     return ''
+   }
+
+   var pages = getCurrentPages() // 获取加载的页面
+   var currentPage = pages[pages.length - 1] // 获取当前页面的对象
+
+   if (typeof currentPage.route === 'function') {
+     return currentPage.__route__ || ''
+   }
+
+   return currentPage.route || ''
  }
 
  /** **********************************************************
@@ -337,43 +383,6 @@
   * end sha1
   ************************************************************/
 
- /*
-  * Fix-up domain
-  */
- const domainFixup = (domain) => {
-   var dl = domain.length
-
-   // remove trailing '.'
-   if (domain.charAt(--dl) === '.') {
-     domain = domain.slice(0, dl)
-   }
-
-   // remove leading '*'
-   if (domain.slice(0, 2) === '*.') {
-     domain = domain.slice(1)
-   }
-
-   if (domain.indexOf('/') !== -1) {
-     domain = domain.substr(0, domain.indexOf('/'))
-   }
-
-   return domain
- }
-
- /**
-  * page.route path
-  */
- const getCurrentPageUrl = () => {
-   var pages = getCurrentPages() // 获取加载的页面
-   var currentPage = pages[pages.length - 1] // 获取当前页面的对象
-
-   if (typeof currentPage.route === 'function') {
-     return currentPage.__route__ || ''
-   }
-
-   return currentPage.route || ''
- }
-
  /** **********************************************************
   * Element Visiblility
   * removed
@@ -436,6 +445,8 @@
 
      this.defaultRequestMethod = 'POST'
 
+     this.pageScheme = 'mp://'
+
      // Request method (GET or POST)
      this.configRequestMethod = this.defaultRequestMethod
 
@@ -487,7 +498,7 @@
      this.configCustomData = null
 
      // Campaign names
-     this.configCampaignNameParameters = ['pk_campaign', 'piwik_campaign', 'utm_campaign', 'utm_source', 'utm_medium']
+     this.configCampaignNameParameters = ['pk_campaign', 'piwik_campaign', 'utm_campaign', 'utm_source', 'utm_medium', 'shareFrom']
 
      // Campaign keywords
      this.configCampaignKeywordParameters = ['pk_kwd', 'piwik_kwd', 'utm_term']
@@ -2443,12 +2454,28 @@
     * Log visit to this page
     *
     * @param string customTitle
+    * @param string pageUrl
     * @param mixed customData
     * @param function callback
     */
-   trackPageView = (customTitle, customData, callback) => {
+   trackPageView = (customTitle, pageUrl, customData, callback) => {
      this.trackedContentImpressions = []
      this.consentRequestsQueue = []
+     if (customTitle === '' || typeof customTitle === 'undefined') {
+       return
+     }
+
+     if (pageUrl === '' || typeof pageUrl === 'undefined') {
+       return
+     }
+
+     if (pageUrl.indexOf(this.pageScheme) !== 0) {
+       pageUrl = this.pageScheme + pageUrl
+     }
+
+     if (pageUrl.indexOf(this.sc)) {
+       this.setCustomUrl(pageUrl)
+     }
 
      this.trackCallback(() => {
        this.numTrackedPageviews++
@@ -2787,36 +2814,32 @@
      return Matomo.prototype.Instance
    }
 
-   _before2 = (t, a, e) => {
-     if (t[a]) {
-       var s = t[a]
-       t[a] = function(t) {
-         var n = s.call(this, t)
-         e.call(this, [t, n], a)
-         return n
+   _proxy_ret = (that, funcName, func) => {
+     if (that[funcName]) {
+       const origin = that[funcName]
+       that[funcName] = function(param) {
+         const res = origin.call(this, param)
+         func.call(this, [param, res], funcName)
+         return res
        }
      } else {
-       t[a] = function(t) {
-         e.call(this, t, a)
+       that[funcName] = function(param) {
+         func.call(this, param, funcName)
        }
      }
    }
 
-   _before = (t, a, e) => {
-     try {
-       if (t[a]) {
-         var s = t[a]
-         t[a] = function(t) {
-           e.call(this, t, a)
-           s.call(this, t)
-         }
-       } else {
-         t[a] = function(t) {
-           e.call(this, t, a)
-         }
+   _proxy = (that, funcName, func) => {
+     if (that[funcName]) {
+       const origin = that[funcName]
+       that[funcName] = function(param) {
+         func.call(this, param, funcName)
+         origin.call(this, param)
        }
-     } catch (error) {
-       console.error(error)
+     } else {
+       that[funcName] = function(param) {
+         func.call(this, param, funcName)
+       }
      }
    }
 
@@ -2841,11 +2864,11 @@
        App = (app) => {
          app.matomo = this.tracker
          if (autoTrackPage) {
-           this._before(app, 'onLaunch', this._appOnLaunch)
-           this._before(app, 'onUnlaunch', this._appOnUnlaunch)
-           this._before(app, 'onShow', this._appOnShow)
-           this._before(app, 'onHide', this._appOnHide)
-           this._before(app, 'onError', this._appOnError)
+           this._proxy(app, 'onLaunch', this._appOnLaunch)
+           this._proxy(app, 'onUnlaunch', this._appOnUnlaunch)
+           this._proxy(app, 'onShow', this._appOnShow)
+           this._proxy(app, 'onHide', this._appOnHide)
+           this._proxy(app, 'onError', this._appOnError)
          }
          this.AppProxy(app)
        }
@@ -2855,12 +2878,12 @@
        Page = (page) => {
          page.matomo = this.tracker
          if (autoTrackPage) {
-           this._before(page, 'onLoad', this._pageOnLoad)
-           this._before(page, 'onUnload', this._pageOnUnload)
-           this._before(page, 'onShow', this._pageOnShow)
-           this._before(page, 'onHide', this._pageOnHide)
+           this._proxy(page, 'onLoad', this._pageOnLoad)
+           this._proxy(page, 'onUnload', this._pageOnUnload)
+           this._proxy(page, 'onShow', this._pageOnShow)
+           this._proxy(page, 'onHide', this._pageOnHide)
            if (typeof page['onShareAppMessage'] !== 'undefined') {
-             this._before2(page, 'onShareAppMessage', this._pageOnShareAppMessage)
+             this._proxy_ret(page, 'onShareAppMessage', this._pageOnShareAppMessage)
            }
          }
          this.PageProxy(page)
@@ -2871,9 +2894,8 @@
 
    _appOnLaunch = function(options) {
      console.log('_appOnLaunch', options)
-     this.matomo.setCustomDimension(1, options.scene)
-     this.matomo.setCustomUrl(this.matomo.pageScheme + 'app/launch?' + serialiseObject(options))
-     this.matomo.trackPageView('app/launch')
+     options && options.scene && this.matomo.setCustomDimension(1, options.scene)
+     this.matomo.trackPageView('app/launch', `app/launch?${serialiseObject(options)}`)
    }
 
    _appOnUnlaunch = function() {
@@ -2882,10 +2904,9 @@
 
    _appOnShow = function(options) {
      console.log('_appOnShow', options)
-     this.matomo.setCustomDimension(1, options.scene)
+     options && options.scene && this.matomo.setCustomDimension(1, options.scene)
      this.matomo.setCustomData(options)
-     this.matomo.setCustomUrl(this.matomo.pageScheme + 'app/show?' + serialiseObject(options))
-     this.matomo.trackPageView('app/show')
+     this.matomo.trackPageView('app/show', `app/show?${serialiseObject(options)}`)
    }
 
    _appOnHide = function() {
@@ -2898,11 +2919,10 @@
 
    _pageOnLoad = function(options) {
      console.log('_pageOnLoad', options)
-     this.matomo.setCustomData(options)
      const url = getCurrentPageUrl()
      if (url && url !== 'module/index') {
-       this.matomo.setCustomUrl(this.matomo.pageScheme + getCurrentPageUrl() + '?' + serialiseObject(options))
-       this.matomo.trackPageView(this.matomo.pageTitles[getCurrentPageUrl()] || getCurrentPageUrl())
+       this.matomo.setCustomData(options)
+       this.matomo.trackPageView(this.matomo.pageTitles[url] || url, `${url}?${serialiseObject(options)}`)
      }
    }
 
@@ -2920,7 +2940,8 @@
 
    _pageOnShareAppMessage = function(options) {
      console.log('_pageOnShareAppMessage', options)
-     this.matomo.trackEvent('share', 'OnShareAppMessage', serialiseObject(options))
+     const sharefrom = options[0] || 'menu'
+     this.matomo.trackEvent('share', sharefrom, serialiseObject(options))
    }
  }
 

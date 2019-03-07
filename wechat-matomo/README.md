@@ -31,7 +31,6 @@ app.js
 import mamoto from 'wechat-matomo'
 const pageTitles = { // 页面标题翻译
   'pages/home/index': '页面标题1111',
-  'pages/reduceActivity/index': '页面标题2222',
    ……
 }
 matomo.initTracker(reportUrl, siteId, { pageTitles })
@@ -62,7 +61,7 @@ this.$parent.$wxapp.matomo.resetUserId()
 /**
  * 自定义事件追踪
  * eg:
- *  this.$parent.$wxapp.matomo.trackEvent('Share', '商品分享', '商品名称', 1)
+ *  this.$parent.$wxapp.matomo.trackEvent('商城', '商品分享', '商品名称', 1)
  * category: 事件分类
  * action: 动作
  * name: 具体目标名称， 非必填
@@ -72,15 +71,12 @@ this.$parent.$wxapp.matomo.trackEvent('category', 'action', 'name', num)
 
 /**
  * 自定义页面追踪
- * 小程序会通过page.onLoad自动追踪页面事件
+ * 正常小程序页面会自动追踪page.onLoad页面事件进行上报，其他页面需手动上报
  * eg:
- *  this.matomo.setCustomUrl(this.$parent.$wxapp.matomo.pageScheme + this.route + '?' + serialiseObject(options))
- *  this.matomo.trackPageView('直播页')
- * customUrl: 自定义页面链接，注意格式需要指定scheme前缀，比如 mp://xxxx/xxxx/xxxx
- * pageTile: 页面的Title
+ *  this.matomo.trackPageView('直播页', 'pages/plan/index')
+ * customUrl: 自定义页面链接，与小程序页面path格式一致即可
  */
-this.$parent.$wxapp.matomo.setCustomUrl(customUrl)
-this.$parent.$wxapp.matomo.trackPageView(pageTile)
+this.$parent.$wxapp.matomo.trackPageView(pageTile, customUrl)
 
 ```
 
