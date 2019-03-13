@@ -498,7 +498,7 @@
      this.configCustomData = null
 
      // Campaign names
-     this.configCampaignNameParameters = ['pk_campaign', 'piwik_campaign', 'utm_campaign', 'utm_source', 'utm_medium', 'shareFrom' , 'sharefrom']
+     this.configCampaignNameParameters = ['pk_campaign', 'piwik_campaign', 'utm_campaign', 'utm_source', 'utm_medium']
 
      // Campaign keywords
      this.configCampaignKeywordParameters = ['pk_kwd', 'piwik_kwd', 'utm_term']
@@ -2895,7 +2895,7 @@
    _appOnLaunch = function(options) {
      console.log('_appOnLaunch', options)
      options && options.scene && this.matomo.setCustomDimension(1, options.scene)
-     let shareFrom  = options && (options.sharefrom || options.shareFrom) || 'default'
+     let shareFrom  = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
      this.matomo.setCustomDimension(2, shareFrom)
      this.matomo.trackPageView('app/launch', `app/launch?${serialiseObject(options)}`)
    }
@@ -2907,7 +2907,7 @@
    _appOnShow = function(options) {
      console.log('_appOnShow', options)
      options && options.scene && this.matomo.setCustomDimension(1, options.scene)
-     let shareFrom  = options && (options.sharefrom || options.shareFrom) || 'default'
+     let shareFrom  = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
      this.matomo.setCustomDimension(2, shareFrom)
      this.matomo.setCustomData(options)
      this.matomo.trackPageView('app/show', `app/show?${serialiseObject(options)}`)
