@@ -1878,12 +1878,11 @@
        return
      }
      this.configUserId = userId.toString()
-     var oldUserId = this.getCookie(this.getCookieName('user_id'))
-     this.setCookie(this.getCookieName('user_id'), this.configUserId, this.getRemainingVisitorCookieTimeout())
-
+     var oldUserId = this.getCookie(this.getCookieName('user_id')) 
      if (this.configUserId != oldUserId) {
        this.trackEvent('sys', 'bind-user-id') // 自动上报一次，防止无后续动作无法绑定用户
-     }
+     } 
+     this.setCookie(this.getCookieName('user_id'), this.configUserId, this.getRemainingVisitorCookieTimeout())
    }
 
    /**
@@ -2933,7 +2932,7 @@
    _pageOnLoad = function(options) {
      console.log('_pageOnLoad', options)
      const url = getCurrentPageUrl()
-     if (url && url !== 'module/index') {
+     if (url && url !== 'module/index' && url !== 'pages/loading/index') {
        this.matomo.setCustomData(options)
        this.matomo.trackPageView(this.matomo.pageTitles[url] || url, `${url}?${serialiseObject(options)}`)
      }
