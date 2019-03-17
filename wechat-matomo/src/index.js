@@ -174,7 +174,8 @@
  const serialiseObject = (obj) => {
    try {
      const pairs = []
-     const ignores = ['function', 'undefined']
+     const ignoreKeys = ['imageurl', 'clockinsum', 'status', 'mark', 'stratumid', 'useranswerid', 'sharemark', 'ald_share_src', 'pklogid', 'weixinadinfo', 'gdt_vid', 'integraladd', 'assignmentid', 'totalnum']
+     const ignoreValTypes = ['function', 'undefined', 'object']
      for (const prop in obj) {
        if (!obj.hasOwnProperty(prop)) {
          continue
@@ -183,7 +184,10 @@
          pairs.push(serialiseObject(obj[prop]))
          continue
        }
-       if (ignores.indexOf(typeof obj[prop]) !== -1) {
+       if (ignoreKeys.indexOf(prop.toLowerCase()) !== -1) {
+         continue
+       }
+       if (ignoreValTypes.indexOf(typeof obj[prop]) !== -1) {
          continue
        }
        pairs.push(prop + '=' + obj[prop])
@@ -195,18 +199,18 @@
    }
  }
 
-/*
+ /*
   * Fix-up domain
   */
  const domainFixup = (domain) => {
    var dl = domain.length
 
-  // remove trailing '.'
+   // remove trailing '.'
    if (domain.charAt(--dl) === '.') {
      domain = domain.slice(0, dl)
    }
 
-  // remove leading '*'
+   // remove leading '*'
    if (domain.slice(0, 2) === '*.') {
      domain = domain.slice(1)
    }
@@ -218,9 +222,9 @@
    return domain
  }
 
-/**
- * page.route path
- */
+ /**
+  * page.route path
+  */
  const getCurrentPageUrl = () => {
    if (typeof getCurrentPages !== 'function') {
      return ''
@@ -1874,7 +1878,12 @@
        return
      }
      this.configUserId = userId.toString()
+     var oldUserId = this.getCookie(this.getCookieName('user_id'))
      this.setCookie(this.getCookieName('user_id'), this.configUserId, this.getRemainingVisitorCookieTimeout())
+
+     if (this.configUserId != oldUserId) {
+       this.trackEvent('sys', 'bind-user-id') // 自动上报一次，防止无后续动作无法绑定用户
+     }
    }
 
    /**
@@ -2895,7 +2904,7 @@
    _appOnLaunch = function(options) {
      console.log('_appOnLaunch', options)
      options && options.scene && this.matomo.setCustomDimension(1, options.scene)
-     let shareFrom  = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
+     const shareFrom = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
      this.matomo.setCustomDimension(2, shareFrom)
      this.matomo.trackPageView('app/launch', `app/launch?${serialiseObject(options)}`)
    }
@@ -2907,7 +2916,7 @@
    _appOnShow = function(options) {
      console.log('_appOnShow', options)
      options && options.scene && this.matomo.setCustomDimension(1, options.scene)
-     let shareFrom  = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
+     const shareFrom = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
      this.matomo.setCustomDimension(2, shareFrom)
      this.matomo.setCustomData(options)
      this.matomo.trackPageView('app/show', `app/show?${serialiseObject(options)}`)
@@ -2944,7 +2953,7 @@
 
    _pageOnShareAppMessage = function(options) {
      console.log('_pageOnShareAppMessage', options)
-     const sharefrom = options[0] || 'menu'
+     const sharefrom = (options[0] && options[0].from) || 'menu'
      this.matomo.trackEvent('share', sharefrom, serialiseObject(options))
    }
  }
