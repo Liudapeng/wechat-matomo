@@ -174,7 +174,7 @@
  const serialiseObject = (obj) => {
    try {
      const pairs = []
-     const ignoreKeys = ['imageurl', 'clockinsum', 'status', 'mark', 'stratumid', 'useranswerid', 'sharemark', 'ald_share_src', 'pklogid', 'weixinadinfo', 'gdt_vid', 'integraladd', 'assignmentid', 'totalnum']
+     const ignoreKeys = ['imageurl', 'clockinsum', 'status', 'mark', 'stratumid', 'useranswerid', 'sharemark', 'ald_share_src', 'pklogid', 'weixinadinfo', 'gdt_vid', 'weixinadkey', 'integraladd', 'assignmentid', 'totalnum', 'offsetleft', 'offsettop']
      const ignoreValTypes = ['function', 'undefined', 'object']
      for (const prop in obj) {
        if (!obj.hasOwnProperty(prop)) {
@@ -1617,24 +1617,6 @@
      this.sendRequest(request, this.configTrackerPause, callback)
    }
 
-   /*
-    * Construct regular expression of classes
-    */
-   getClassesRegExp(configClasses, defaultClass) {
-     let i
-     let classesRegExp = '(^| )(piwik[_-]' + defaultClass
-
-     if (configClasses) {
-       for (i = 0; i < configClasses.length; i++) {
-         classesRegExp += '|' + configClasses[i]
-       }
-     }
-
-     classesRegExp += ')( |$)'
-
-     return new RegExp(classesRegExp)
-   }
-
    startsUrlWithTrackerUrl(url) {
      return (this.configTrackerUrl && url && String(url).indexOf(this.configTrackerUrl) === 0)
    }
@@ -1878,10 +1860,10 @@
        return
      }
      this.configUserId = userId.toString()
-     var oldUserId = this.getCookie(this.getCookieName('user_id')) 
+     var oldUserId = this.getCookie(this.getCookieName('user_id'))
      if (this.configUserId != oldUserId) {
        this.trackEvent('sys', 'bind-user-id') // 自动上报一次，防止无后续动作无法绑定用户
-     } 
+     }
      this.setCookie(this.getCookieName('user_id'), this.configUserId, this.getRemainingVisitorCookieTimeout())
    }
 
@@ -2901,11 +2883,21 @@
    }
 
    _appOnLaunch = function(options) {
-     console.log('_appOnLaunch', options)
-     options && options.scene && this.matomo.setCustomDimension(1, options.scene)
+     const scene = options && options.scene || 'default'
      const shareFrom = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
-     this.matomo.setCustomDimension(2, shareFrom)
-     this.matomo.trackPageView('app/launch', `app/launch?${serialiseObject(options)}`)
+     const siteId = options && options.query && (options.query.siteId || options.query.siteid) || 'default'
+     const param = serialiseObject(options)
+     const onStartupKey = `<${scene}-${shareFrom}-${siteId}-${param}>`
+     console.log('_appOnLaunch', options, onStartupKey)
+
+     if (this.calledStartup !== onStartupKey) {
+       this.calledStartup = onStartupKey
+       this.matomo.setCustomDimension(1, scene)
+       this.matomo.setCustomDimension(2, shareFrom)
+       this.matomo.setCustomDimension(3, siteId)
+       this.matomo.setCustomData(options)
+       this.matomo.trackPageView('app/launch', `app/launch?${param}`)
+     }
    }
 
    _appOnUnlaunch = function() {
@@ -2913,12 +2905,21 @@
    }
 
    _appOnShow = function(options) {
-     console.log('_appOnShow', options)
-     options && options.scene && this.matomo.setCustomDimension(1, options.scene)
+     const scene = options && options.scene || 'default'
      const shareFrom = options && options.query && (options.query.sharefrom || options.query.shareFrom) || 'default'
-     this.matomo.setCustomDimension(2, shareFrom)
-     this.matomo.setCustomData(options)
-     this.matomo.trackPageView('app/show', `app/show?${serialiseObject(options)}`)
+     const siteId = options && options.query && (options.query.siteId || options.query.siteid) || 'default'
+     const param = serialiseObject(options)
+     const onStartupKey = `<${scene}-${shareFrom}-${siteId}-${param}>`
+     console.log('_appOnShow', options, onStartupKey)
+
+     if (this.calledStartup !== onStartupKey) {
+       this.calledStartup = onStartupKey
+       this.matomo.setCustomDimension(1, scene)
+       this.matomo.setCustomDimension(2, shareFrom)
+       this.matomo.setCustomDimension(3, siteId)
+       this.matomo.setCustomData(options)
+       this.matomo.trackPageView('app/show', `app/show?${param}`)
+     }
    }
 
    _appOnHide = function() {
