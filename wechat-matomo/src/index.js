@@ -1,6 +1,7 @@
  /** **********************************************************
   * Private data
   ************************************************************/
+ const sdkVersion = `${process.env.sdkVersion}`;
 
  let expireDateTime
 
@@ -1397,7 +1398,8 @@
      }
 
      // build out the rest of the request
-     request += '&idsite=' + this.configTrackerSiteId +
+     request += '&sdk_version=' + sdkVersion +
+       '&idsite=' + this.configTrackerSiteId +
        '&rec=1' +
        '&r=' + String(Math.random()).slice(2, 8) + // keep the string to a minimum
        '&h=' + now.getHours() + '&m=' + now.getMinutes() + '&s=' + now.getSeconds() +
@@ -2895,6 +2897,7 @@
        this.matomo.setCustomDimension(1, scene)
        this.matomo.setCustomDimension(2, shareFrom)
        this.matomo.setCustomDimension(3, siteId)
+       this.matomo.setCustomDimension(4, sdkVersion)
        this.matomo.setCustomData(options)
        this.matomo.trackPageView('app/launch', `app/launch?${param}`)
      }
@@ -2917,6 +2920,7 @@
        this.matomo.setCustomDimension(1, scene)
        this.matomo.setCustomDimension(2, shareFrom)
        this.matomo.setCustomDimension(3, siteId)
+       this.matomo.setCustomDimension(4, sdkVersion)
        this.matomo.setCustomData(options)
        this.matomo.trackPageView('app/show', `app/show?${param}`)
      }
@@ -2955,7 +2959,6 @@
      console.log('_pageOnShareAppMessage', options)
      const sharefrom = (options[0] && options[0].from) || 'menu'
      this.matomo.trackEvent('share', sharefrom, serialiseObject(options))
-   }
- }
-
- export default new Matomo()
+   } 
+ } 
+ export default new Matomo(sdkVersion)

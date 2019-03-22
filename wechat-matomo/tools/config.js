@@ -1,3 +1,4 @@
+const version = require('../package.json').version 
 const path = require('path')
 
 const webpack = require('webpack')
@@ -55,8 +56,10 @@ module.exports = {
       modules: [src, 'node_modules'],
       extensions: ['.js', '.json'],
     },
-    plugins: [
-      new webpack.DefinePlugin({}),
+    plugins: [ 
+      new webpack.DefinePlugin({
+        'process.env.sdkVersion': '"'+version+'"' 
+    }),
       new webpack.optimize.LimitChunkCountPlugin({
         maxChunks: 1
       }),
